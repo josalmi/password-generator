@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/materialize.min.css" media="screen,projection"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <div class="row">
+                <form class="col s12" id="generateForm">
+                    <h1>Generate random password</h1>
+                    <div class="row">
+                        <div class="range-field col s12">
+                            <label for="length">Password length</label>
+                            <input type="range" id="length" min="1" max="100" value="64" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col s12 m6 l3">
+                            <input class="filled-in" type="checkbox" id="upper" name="characters[]" checked value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
+                            <label for="upper">A-Z</label>
+                        </div>
+                        <div class="col s12 m6 l3">
+                            <input class="filled-in" type="checkbox" id="lower" name="characters[]" checked value="abcdefghijklmnopqrstuvwxyz">
+                            <label for="lower">a-z</label>
+                        </div>
+                        <div class="col s12 m6 l3">
+                            <input class="filled-in" type="checkbox" id="numbers" name="characters[]" checked value="0123456789">
+                            <label for="numbers">0-9</label>
+                        </div>
+                        <div class="col s12 m6 l3">
+                            <input class="filled-in" type="checkbox" id="symbols" name="characters[]" checked value="!@#$%^&amp;*?€=-+">
+                            <label for="symbols">Symbols</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <button class="btn waves-effect waves-light" type="submit" name="action">
+                                Generate
+                                <i class="mdi-content-send right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <label for="generatedPassword">Generated password</label>
+                    <input disabled id="generatedPassword" type="text" value="&nbsp;">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="section">
+            <div class="row">
+                <form class="col s12" id="cryptForm">
+                    <h1>Hash password</h1>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input type="password" id="password" />
+                            <label for="password">Password</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input type="text" id="salt" />
+                            <label for="salt">Salt (Optional)</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="range-field col s12">
+                            <label for="rounds">Iterations</label>
+                            <input type="range" id="rounds" min="5" max="30" value="10" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <button class="btn waves-effect waves-light" type="submit" name="action">
+                                Crypt
+                                <i class="mdi-content-send right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <label for="generatedHash">Generated hash</label>
+                    <input disabled id="generatedHash" type="text" value="&nbsp;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="js/materialize.min.js"></script>
+    <script src="js/shuffle.js"></script>
+    <script src="js/isaac.js" type="text/javascript"></script>
+    <script src="js/bCrypt.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+
+    $("#generateForm").submit(function(e) {
+        e.preventDefault();
+        var characters = $(this).find('input[type="checkbox"][name="characters\\[\\]"]:checked').map(function() { return this.value; }).get().join().shuffle();
+        var passwordLength = parseInt($(this).find('#length').val());
+        var password = "";
+        while (password.length < passwordLength) {
+            password += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        $("#generatedPassword").val(password);
+    });
+
+
+    var bcrypt = new bCrypt();
+    function getSalt() {
+        var salt = $("#salt").val();
+        if (salt) {
+            return salt;
+        }
+        return bcrypt.gensalt($("#rounds").val());
+    }
+
+    $('#cryptForm').submit(function(e){
+        e.preventDefault();
+        try{
+            var salt = $("#salt").val();
+            if (!salt) {
+                salt = bcrypt.gensalt($("#rounds").val());
+            }
+            bcrypt.hashpw($("#password").val(), salt, function(hash) {
+                $("#generatedHash").val(hash);
+            });
+        }catch(err){
+            Materialize.toast(err, 3000, 'red')
+        }
+        return false;
+    });
+    </script>
+</body>
+</html>
