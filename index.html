@@ -103,6 +103,14 @@
         var remaining = passwords.length;
         var results = [];
         for (var i = 0; i < passwords.length; i++) {
+            if (passwords[i].length === 0) {
+                results[i] = "";
+                remaining--;
+                if (remaining == 0) {
+                    cb(results);
+                }
+                continue;
+            }
             var bcrypt = new bCrypt();
             bcrypt.hashpw(passwords[i], bcrypt.gensalt(10), function store(i) {
                 return function(hash) {
