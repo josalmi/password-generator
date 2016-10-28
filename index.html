@@ -9,12 +9,37 @@
     <div class="container">
         <div class="section">
             <div class="row">
+                <form class="col s12" id="cryptForm">
+                    <h1>Hash password</h1>
+                    <div class="row">
+                        <div class="input-field col s4">
+                            <textarea id="passwords" class="materialize-textarea" rows="20"></textarea>
+                            <label for="passwords">Passwords</label>
+                        </div>
+                        <div class="input-field col s8">
+                            <textarea readonly id="hashes" class="materialize-textarea" rows="20"></textarea>
+                            <label for="hashes" id="hashes-label">Hashes</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <button class="btn waves-effect waves-light" type="submit" name="action">
+                                Crypt
+                                <i class="mdi-content-send right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="section">
+            <div class="row">
                 <form class="col s12" id="generateForm">
                     <h1>Generate random password</h1>
                     <div class="row">
                         <div class="range-field col s12">
                             <label for="length">Password length</label>
-                            <input type="range" id="length" min="1" max="100" value="64" />
+                            <input type="range" id="length" min="1" max="100" value="10" />
                         </div>
                     </div>
                     <div class="row">
@@ -53,47 +78,6 @@
             </div>
         </div>
     </div>
-    <div class="container">
-        <div class="section">
-            <div class="row">
-                <form class="col s12" id="cryptForm">
-                    <h1>Hash password</h1>
-                    <div class="row">
-                        <div class="input-field col s12">
-                            <input type="password" id="password" />
-                            <label for="password">Password</label>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="input-field col s12">
-                            <input type="text" id="salt" />
-                            <label for="salt">Salt (Optional)</label>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="range-field col s12">
-                            <label for="rounds">Iterations</label>
-                            <input type="range" id="rounds" min="5" max="30" value="10" />
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="input-field col s12">
-                            <button class="btn waves-effect waves-light" type="submit" name="action">
-                                Crypt
-                                <i class="mdi-content-send right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="row">
-                <div class="input-field col s12">
-                    <label for="generatedHash">Generated hash</label>
-                    <input readonly id="generatedHash" type="text" value="&nbsp;">
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="js/materialize.min.js"></script>
@@ -105,7 +89,7 @@
 
     $("#generateForm").submit(function(e) {
         e.preventDefault();
-        var characters = $(this).find('input[type="checkbox"][name="characters\\[\\]"]:checked').map(function() { return this.value; }).get().join().shuffle();
+        var characters = $(this).find('input[type="checkbox"][name="characters\\[\\]"]:checked').map(function() { return this.value; }).get().join('').shuffle();
         var passwordLength = parseInt($(this).find('#length').val());
         var password = "";
         while (password.length < passwordLength) {
@@ -115,28 +99,30 @@
     });
 
 
-    var bcrypt = new bCrypt();
-    function getSalt() {
-        var salt = $("#salt").val();
-        if (salt) {
-            return salt;
+    function hashPasswords(passwords, cb) {
+        var remaining = passwords.length;
+        var results = [];
+        for (var i = 0; i < passwords.length; i++) {
+            var bcrypt = new bCrypt();
+            bcrypt.hashpw(passwords[i], bcrypt.gensalt(10), function store(i) {
+                return function(hash) {
+                    results[i] = hash;
+                    remaining--;
+                    if (remaining == 0) {
+                        cb(results);
+                    }
+                }
+            }(i));
         }
-        return bcrypt.gensalt($("#rounds").val());
     }
 
     $('#cryptForm').submit(function(e){
         e.preventDefault();
-        try{
-            var salt = $("#salt").val();
-            if (!salt) {
-                salt = bcrypt.gensalt($("#rounds").val());
-            }
-            bcrypt.hashpw($("#password").val(), salt, function(hash) {
-                $("#generatedHash").val(hash);
-            });
-        }catch(err){
-            Materialize.toast(err, 3000, 'red')
-        }
+        var passwords = $("#passwords").val().split("\n");
+        hashPasswords(passwords, function(hashes) {
+            $("#hashes").val(hashes.join("\n")).height($("#passwords").height());
+            $("#hashes-label").addClass("active");
+        });
         return false;
     });
     </script>
